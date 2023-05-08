@@ -9,7 +9,7 @@ WIDTH, HEIGHT = 1280, 720
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE, pygame.DOUBLEBUF)
 pygame.display.set_caption("Game of Life")
 
-rows = 100
+rows = 80
 cols = 100
 grid = np.zeros((rows, cols))
 paused = False
@@ -41,20 +41,29 @@ def update(grid):
     return new_grid
 
 def draw_grid():
+    cell_width = WIDTH // cols
+    cell_height = HEIGHT // rows
+    grid_width = cell_width * cols
+    grid_height = cell_height * rows
+
     for row in range(rows):
         for col in range(cols):
-            x = col * (WIDTH // cols)
-            y = row * (HEIGHT // rows)
+            x = col * cell_width
+            y = row * cell_height
             if grid[row][col] == 1:
                 color = (0, 255, 0)
             else:
                 color = (0, 0, 0)
-            pygame.draw.rect(screen, color, (x, y, WIDTH // cols - 1, HEIGHT // rows - 1))
+            pygame.draw.rect(screen, color, (x, y, cell_width - 1, cell_height - 1))
+    pygame.draw.rect(screen, (255, 255, 255), (0, 0, grid_width - 1, grid_height - 1), 1)
 
 def handle_mouse_click(x, y):
-    col = x // (WIDTH // cols)
-    row = y // (HEIGHT // rows)
-    grid[row][col] = not grid[row][col]
+    try:
+        col = x // (WIDTH // cols)
+        row = y // (HEIGHT // rows)
+        grid[row][col] = not grid[row][col]
+    except IndexError:
+        print("Error: Click was outside the grid")
 
 clock = pygame.time.Clock()
 
@@ -75,12 +84,17 @@ while run:
             x, y = pygame.mouse.get_pos()
             handle_mouse_click(x, y)
 
+    if pygame.mouse.get_pressed()[0]:
+        x, y = pygame.mouse.get_pos()
+        handle_mouse_click(x, y)
+
     screen.fill((0, 0, 0))
     draw_grid()
     if not paused:
         grid = update(grid)
 
     pygame.display.update()
+
 
 pygame.quit()
 
