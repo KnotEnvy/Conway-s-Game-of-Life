@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+import random
 
 pygame.init()
 pygame.font.init()
@@ -9,8 +10,11 @@ WIDTH, HEIGHT = 1280, 720
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE, pygame.DOUBLEBUF)
 pygame.display.set_caption("Game of Life")
 
-rows = 80
-cols = 100
+CELL_NUMBER = 100
+
+
+rows = 50
+cols = 50
 grid = np.zeros((rows, cols))
 paused = False
 
@@ -64,9 +68,49 @@ def handle_mouse_click(x, y):
         grid[row][col] = not grid[row][col]
     except IndexError:
         print("Error: Click was outside the grid")
+paused_time = 0
+text_displayed = False
+
+def draw_text():
+    global paused_time
+    global text_displayed
+    if not paused:
+        paused_time = 0
+        if not text_displayed:
+            font = pygame.font.SysFont("comicsans", 30)
+            text = font.render("Press SPACE to pause and start placing cells with your mouse", True, (255, 255, 255))
+            screen.blit(text, (10, 10))
+            text = font.render("'R' restarts the cells and 'ESC' quits", True, (255, 255, 255))
+            screen.blit(text, (10, 40))
+            text = font.render("'B' places {} random cells on the board".format(CELL_NUMBER), True, (255, 255, 255))
+            screen.blit(text, (10, 70))
+    else:
+        if not text_displayed:
+            paused_time += clock.tick(30)
+            alpha = max(0, 125 - paused_time // 10)
+            if alpha == 0:
+                text_displayed = True
+            font = pygame.font.SysFont("comicsans", 30)
+            text = font.render("Press SPACE to pause and start placing cells with your mouse", True, (255, 255, 255))
+            text.set_alpha(alpha)
+            screen.blit(text, (10, 10))
+            text = font.render("'R' restarts the cells and 'ESC' quits", True, (255, 255, 255))
+            text.set_alpha(alpha)
+            screen.blit(text, (10, 40))
+            text = font.render("'B' places {} random cells on the board".format(CELL_NUMBER), True, (255, 255, 255))
+            text.set_alpha(alpha)
+            screen.blit(text, (10, 70))
+
+
+def place_random_cells(grid, num_cells):
+    new_grid = grid.copy()
+    for _ in range(num_cells):
+        row = random.randint(0, rows - 1)
+        col = random.randint(0, cols - 1)
+        new_grid[row][col] = 1
+    return new_grid
 
 clock = pygame.time.Clock()
-
 run = True
 while run:
     clock.tick(5)
@@ -80,6 +124,8 @@ while run:
                 paused = not paused
             elif event.key == pygame.K_r:
                 grid.fill(0)
+            elif event.key == pygame.K_b: # Press 'b' to place random cells
+                grid = place_random_cells(grid, CELL_NUMBER)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
             handle_mouse_click(x, y)
@@ -90,6 +136,7 @@ while run:
 
     screen.fill((0, 0, 0))
     draw_grid()
+    draw_text()
     if not paused:
         grid = update(grid)
 
